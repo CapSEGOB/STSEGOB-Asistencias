@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabaseAdmin } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { IconMail, IconLock, IconUsers, IconShield, IconUserPlus } from '../Icons'
 
 export default function RegistroUsuarios() {
@@ -10,27 +10,40 @@ export default function RegistroUsuarios() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!supabaseAdmin) {
-      setError('Variable VITE_SUPABASE_SERVICE_ROLE_KEY no está configurada en el archivo .env')
-      return
-    }
     setLoading(true)
     setError(null)
     setMessage(null)
 
-    const { error } = await supabaseAdmin.auth.admin.createUser({
-      email:         form.email,
-      password:      form.password,
-      email_confirm: true,
-      user_metadata: { nombre: form.nombre, rol: form.rol },
+    // 1. Crear usuario en Auth
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email:    form.email,
+      password: form.password,
+      options:  { data: { nombre: form.nombre, rol: form.rol } },
     })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      setMessage(`Usuario "${form.nombre}" (${form.email}) creado exitosamente como ${form.rol === 'super_admin' ? 'Administrador' : 'Staff'}.`)
-      setForm({ nombre: '', email: '', password: '', rol: 'staff' })
+    if (signUpError) {
+      setError(signUpError.message)
+      setLoading(false)
+      return
     }
+
+    // 2. Insertar fila en public.usuarios
+    if (data?.user?.id) {
+      const { error: insertError } = await supabase.from('usuarios').upsert({
+        id:     data.user.id,
+        nombre: form.nombre,
+        email:  form.email,
+        rol:    form.rol,
+      })
+      if (insertError) {
+        setError('Usuario creado pero no se pudo asignar rol: ' + insertError.message)
+        setLoading(false)
+        return
+      }
+    }
+
+    setMessage(`Usuario "${form.nombre}" (${form.email}) creado como ${form.rol === 'super_admin' ? 'Administrador' : 'Staff'}.`)
+    setForm({ nombre: '', email: '', password: '', rol: 'staff' })
     setLoading(false)
   }
 
