@@ -309,7 +309,9 @@ export default function Estadisticas({ usuario }) {
                 tickLine={false}
               />
               <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }}
+                cursor={{ fill: 'rgba(99,102,241,0.06)' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e0e7ff', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12, padding: '10px 14px' }}
+                labelStyle={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 4 }}
                 labelFormatter={(siglas) => {
                   const dep = stats.porDependencia.find(d => d.siglas === siglas)
                   return dep ? dep.dependencia : siglas
