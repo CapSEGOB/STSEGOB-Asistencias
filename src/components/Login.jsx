@@ -59,12 +59,7 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-6 bg-white lg:bg-slate-50">
         <div className="w-full max-w-md">
 
-          {/* Logo solo móvil */}
-          <div className="lg:hidden text-center mb-6">
-            <img src="/logogob.png" alt="Logo SEGOB" className="h-12 w-auto mx-auto mb-2" />
-            <h1 className="text-lg font-black" style={{ color: '#0e322e' }}>STSEGOB</h1>
-            <p className="text-gray-500 text-xs">Control de Asistencia</p>
-          </div>
+          {/* Logo solo móvil — oculto porque el panel superior ya muestra el logo */}
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
             <div className="mb-7">
