@@ -22,34 +22,33 @@ export default function Login() {
 
       {/* Panel izquierdo — branding con imagen */}
       <div
-        className="relative lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16 overflow-hidden"
+        className="relative lg:w-1/2 flex flex-col items-center justify-center overflow-hidden"
         style={{
           backgroundImage: 'url(/bg-login.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          minHeight: '180px',
+          padding: 'clamp(1.5rem, 5vw, 4rem)',
         }}
       >
-        {/* Overlay oscuro para legibilidad */}
         <div className="absolute inset-0 bg-[#0e322e]/80" />
-
-        {/* Contenido */}
         <div className="relative z-10 text-center flex flex-col items-center">
           <img
             src="/logogob.png"
             alt="Logo SEGOB"
-            className="h-24 lg:h-32 w-auto mb-6 drop-shadow-2xl"
+            className="h-16 lg:h-28 w-auto mb-3 lg:mb-6 drop-shadow-2xl"
           />
-          <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">
+          <h1 className="text-2xl lg:text-4xl font-black text-white tracking-tight mb-1 lg:mb-2">
             STSEGOB
           </h1>
-          <p className="text-white/80 text-base lg:text-lg font-medium mb-2">
-            SEGOB
+          <p className="text-white/80 text-sm lg:text-lg font-medium mb-1 lg:mb-2">
+            Control de Asistencia
           </p>
-          <div className="w-16 h-0.5 mx-auto my-4 rounded-full" style={{ backgroundColor: '#c79c67' }} />
-          <p className="text-white/60 text-sm max-w-xs leading-relaxed">
+          <div className="hidden lg:block w-16 h-0.5 mx-auto my-4 rounded-full" style={{ backgroundColor: '#c79c67' }} />
+          <p className="hidden lg:block text-white/60 text-sm max-w-xs leading-relaxed">
             Sistema Oficial de Control de Asistencia para eventos institucionales.
           </p>
-          <div className="mt-8 flex items-center gap-2 text-white/50 text-xs">
+          <div className="hidden lg:flex mt-8 items-center gap-2 text-white/50 text-xs">
             <IconShield className="w-3.5 h-3.5" style={{ color: '#c79c67' }} />
             <span>Acceso restringido a personal autorizado</span>
           </div>
@@ -60,11 +59,11 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-6 bg-white lg:bg-slate-50">
         <div className="w-full max-w-md">
 
-          {/* Logo solo móvil (cuando el panel izq queda arriba) */}
-          <div className="lg:hidden text-center mb-8">
-            <img src="/logogob.png" alt="Logo SEGOB" className="h-16 w-auto mx-auto mb-3" />
-            <h1 className="text-xl font-black" style={{ color: '#0e322e' }}>STSEGOB</h1>
-            <p className="text-gray-500 text-sm">Control de Asistencia</p>
+          {/* Logo solo móvil */}
+          <div className="lg:hidden text-center mb-6">
+            <img src="/logogob.png" alt="Logo SEGOB" className="h-12 w-auto mx-auto mb-2" />
+            <h1 className="text-lg font-black" style={{ color: '#0e322e' }}>STSEGOB</h1>
+            <p className="text-gray-500 text-xs">Control de Asistencia</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">

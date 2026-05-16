@@ -244,9 +244,9 @@ export default function Estadisticas({ usuario }) {
         </div>
 
         {/* KPI stack */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-4">
+        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-4">
           {/* Barra progreso grande */}
-          <div className="sm:col-span-3 lg:col-span-1 rounded-2xl p-6 text-white flex items-center justify-between gap-6" style={{ background: 'linear-gradient(to bottom right, #0e322e, #26645b)' }}>
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1 rounded-2xl p-5 sm:p-6 text-white flex items-center justify-between gap-4" style={{ background: 'linear-gradient(to bottom right, #0e322e, #26645b)' }}>
             <div>
               <div className="text-xs font-medium text-white/70 uppercase tracking-widest mb-1">Progreso general</div>
               <div className="text-5xl font-black">{pct}<span className="text-2xl font-bold text-white/60">%</span></div>
@@ -322,25 +322,27 @@ export default function Estadisticas({ usuario }) {
           <h3 className="text-sm font-bold text-gray-800">Asistencia por Salón</h3>
           <span className="text-xs text-gray-400">{stats.porSalon.length} salones</span>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-x-auto">
+          <div style={{ minWidth: 280 }}>
           <ResponsiveContainer width="100%" height={Math.max(200, stats.porSalon.length * 52)}>
-            <BarChart data={stats.porSalon} layout="vertical" margin={{ top: 0, right: 60, left: 80, bottom: 0 }} barCategoryGap="30%">
+            <BarChart data={stats.porSalon} layout="vertical" margin={{ top: 0, right: 50, left: 70, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
               <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="salon" width={80} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="salon" width={70} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
               <Tooltip
-                cursor={{ fill: 'rgba(99,102,241,0.05)' }}
+                cursor={{ fill: 'rgba(64,155,132,0.07)' }}
                 contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontSize: 12, padding: '10px 14px' }}
                 labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 6 }}
               />
-              <Bar dataKey="Invitados" name="Invitados" fill="#e0e7ff" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="Presentes" name="Presentes" fill="#4f46e5" radius={[0, 4, 4, 0]}
-                label={{ position: 'right', fontSize: 11, fill: '#4f46e5', fontWeight: 700 }} />
+              <Bar dataKey="Invitados" name="Invitados" fill="#409b8430" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="Presentes" name="Presentes" fill="#409b84" radius={[0, 4, 4, 0]}
+                label={{ position: 'right', fontSize: 11, fill: '#26645b', fontWeight: 700 }} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
           <div className="flex items-center gap-4 justify-center mt-4">
-            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-200 inline-block"/><span className="text-xs text-gray-500">Invitados</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-600 inline-block"/><span className="text-xs text-gray-500">Presentes</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: '#409b8430', border: '1px solid #409b84' }}/><span className="text-xs text-gray-500">Invitados</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: '#409b84' }}/><span className="text-xs text-gray-500">Presentes</span></div>
           </div>
         </div>
       </div>
