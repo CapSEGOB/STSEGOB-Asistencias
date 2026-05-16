@@ -42,13 +42,13 @@ export default function RegistroUsuarios() {
     <div className="max-w-xl mx-auto">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Header */}
-        <div className="bg-blue-950 px-6 py-5 flex items-center gap-3">
+        <div className="px-6 py-5 flex items-center gap-3" style={{ backgroundColor: '#0e322e' }}>
           <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
             <IconUserPlus className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="text-white font-bold text-base">Registrar nuevo usuario</h2>
-            <p className="text-blue-300 text-xs mt-0.5">Personal con acceso al sistema</p>
+            <p className="text-white/60 text-xs mt-0.5">Personal con acceso al sistema</p>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export default function RegistroUsuarios() {
               value={form.nombre}
               onChange={handleChange}
               required
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
               placeholder="Ej. Juan Pérez García"
             />
           </div>
@@ -84,7 +84,7 @@ export default function RegistroUsuarios() {
                 value={form.email}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
                 placeholder="usuario@stsegob.gob.mx"
               />
             </div>
@@ -106,7 +106,7 @@ export default function RegistroUsuarios() {
                 onChange={handleChange}
                 required
                 minLength={6}
-                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
@@ -125,7 +125,7 @@ export default function RegistroUsuarios() {
                 icon={<IconUsers className="w-5 h-5" />}
                 title="Staff"
                 desc="Registro de asistencia"
-                color="blue"
+                color="teal"
               />
               <RolCard
                 value="super_admin"
@@ -156,7 +156,10 @@ export default function RegistroUsuarios() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-800 hover:bg-blue-900 disabled:bg-blue-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md text-sm flex items-center justify-center gap-2"
+            className="w-full text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{ backgroundColor: '#0e322e' }}
+            onMouseEnter={e => !loading && (e.currentTarget.style.backgroundColor = '#26645b')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0e322e')}
           >
             {loading ? (
               <>
@@ -181,7 +184,7 @@ export default function RegistroUsuarios() {
 
 function RolCard({ selected, onClick, icon, title, desc, color }) {
   const colors = {
-    blue:  { border: 'border-blue-500 bg-blue-50',  icon: 'bg-blue-100 text-blue-700', text: 'text-blue-800' },
+    teal:  { border: 'border-[#409b84] bg-[#409b84]/10',  icon: 'bg-[#409b84]/20 text-[#26645b]', text: 'text-[#0e322e]' },
     amber: { border: 'border-amber-500 bg-amber-50', icon: 'bg-amber-100 text-amber-700', text: 'text-amber-800' },
   }
   const c = colors[color]

@@ -42,14 +42,14 @@ export default function AsistenteModal({ asistente, usuario, onClose, onActualiz
       >
         {/* Header con avatar */}
         <div className={`px-6 py-5 flex items-start gap-4 ${
-          asistente.asistio ? 'bg-gradient-to-br from-green-600 to-emerald-700' : 'bg-gradient-to-br from-blue-900 to-blue-800'
+          asistente.asistio ? 'bg-gradient-to-br from-green-600 to-emerald-700' : 'bg-gradient-to-br from-[#0e322e] to-[#26645b]'
         }`}>
           <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-xl font-black border border-white/30">
             {initiales}
           </div>
           <div className="flex-1 min-w-0">
             <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${
-              asistente.asistio ? 'text-green-200' : 'text-blue-300'
+              asistente.asistio ? 'text-green-200' : 'text-[#409b84]'
             }`}>Asistente registrado</p>
             <h2 className="text-white font-bold text-base leading-tight">{nombreCompleto}</h2>
             <p className="text-white/70 text-xs mt-1">{asistente.cargo || asistente.puesto || 'Sin cargo'}</p>
@@ -112,7 +112,10 @@ export default function AsistenteModal({ asistente, usuario, onClose, onActualiz
             <button
               onClick={marcarAsistencia}
               disabled={loading}
-              className="w-full py-4 rounded-xl text-white text-sm font-bold bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-blue-400 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl text-white text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
+              style={{ backgroundColor: '#26645b' }}
+              onMouseEnter={e => !loading && (e.currentTarget.style.backgroundColor = '#0e322e')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#26645b')}
             >
               {loading ? (
                 <>

@@ -142,7 +142,7 @@ export default function Estadisticas({ usuario }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent" style={{ borderColor: '#409b84', borderTopColor: 'transparent' }} />
         <span className="text-sm text-gray-400">Cargando estadísticas...</span>
       </div>
     )
@@ -201,7 +201,9 @@ export default function Estadisticas({ usuario }) {
           <button onClick={fetchStats} className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm">
             <IconRefresh className="w-3.5 h-3.5" /> Actualizar
           </button>
-          <button onClick={exportPDF} className="flex items-center gap-1.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm">
+          <button onClick={exportPDF} className="flex items-center gap-1.5 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm" style={{ backgroundColor: '#0e322e' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#26645b')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0e322e')}>
             <IconDownload className="w-3.5 h-3.5" /> Descargar PDF
           </button>
         </div>
@@ -214,21 +216,21 @@ export default function Estadisticas({ usuario }) {
           <div className="relative">
             <svg viewBox="0 0 120 120" className="w-36 h-36 -rotate-90">
               <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f5f9" strokeWidth="16" />
-              <circle cx="60" cy="60" r="48" fill="none" stroke="#1d4ed8" strokeWidth="16"
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#409b84" strokeWidth="16"
                 strokeDasharray={`${(parseFloat(pct) / 100) * 301.59} 301.59`}
                 strokeLinecap="round"
                 style={{ transition: 'stroke-dasharray 1s ease' }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-blue-700">{pct}%</span>
+              <span className="text-3xl font-black" style={{ color: '#0e322e' }}>{pct}%</span>
               <span className="text-xs text-gray-400 font-medium">asistencia</span>
             </div>
           </div>
           <div className="mt-4 w-full space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"/><span className="text-gray-600">Presentes</span></div>
-              <span className="font-bold text-blue-700">{stats.totalPresentes.toLocaleString('es-MX')}</span>
+              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#409b84' }}/><span className="text-gray-600">Presentes</span></div>
+              <span className="font-bold" style={{ color: '#0e322e' }}>{stats.totalPresentes.toLocaleString('es-MX')}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-200 inline-block"/><span className="text-gray-600">Ausentes</span></div>
@@ -244,11 +246,11 @@ export default function Estadisticas({ usuario }) {
         {/* KPI stack */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-4">
           {/* Barra progreso grande */}
-          <div className="sm:col-span-3 lg:col-span-1 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-6 text-white flex items-center justify-between gap-6">
+          <div className="sm:col-span-3 lg:col-span-1 rounded-2xl p-6 text-white flex items-center justify-between gap-6" style={{ background: 'linear-gradient(to bottom right, #0e322e, #26645b)' }}>
             <div>
-              <div className="text-xs font-medium text-blue-200 uppercase tracking-widest mb-1">Progreso general</div>
-              <div className="text-5xl font-black">{pct}<span className="text-2xl font-bold text-blue-300">%</span></div>
-              <div className="text-sm text-blue-200 mt-1">{stats.totalPresentes.toLocaleString('es-MX')} de {stats.total.toLocaleString('es-MX')} asistentes</div>
+              <div className="text-xs font-medium text-white/70 uppercase tracking-widest mb-1">Progreso general</div>
+              <div className="text-5xl font-black">{pct}<span className="text-2xl font-bold text-white/60">%</span></div>
+              <div className="text-sm text-white/70 mt-1">{stats.totalPresentes.toLocaleString('es-MX')} de {stats.total.toLocaleString('es-MX')} asistentes</div>
             </div>
             <div className="flex-shrink-0 w-16">
               <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
@@ -288,7 +290,7 @@ export default function Estadisticas({ usuario }) {
         <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
           {stats.porDependencia.map((d, i) => {
             const p = d.Invitados > 0 ? (d.Presentes / d.Invitados) * 100 : 0
-            const color = p >= 75 ? 'bg-emerald-500' : p >= 50 ? 'bg-blue-500' : p >= 25 ? 'bg-amber-400' : 'bg-red-400'
+            const color = p >= 75 ? 'bg-emerald-500' : p >= 50 ? 'bg-[#409b84]' : p >= 25 ? 'bg-amber-400' : 'bg-red-400'
             return (
               <div key={d.dependencia} className="px-6 py-3 hover:bg-slate-50 transition-colors">
                 <div className="flex items-center justify-between mb-1.5">
@@ -298,7 +300,7 @@ export default function Estadisticas({ usuario }) {
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                     <span className="text-xs text-gray-400">{d.Presentes}<span className="text-gray-300">/{d.Invitados}</span></span>
-                    <span className={`text-xs font-bold w-11 text-right ${p >= 75 ? 'text-emerald-600' : p >= 50 ? 'text-blue-600' : p >= 25 ? 'text-amber-500' : 'text-red-500'}`}>
+                    <span className={`text-xs font-bold w-11 text-right ${p >= 75 ? 'text-emerald-600' : p >= 50 ? 'text-[#26645b]' : p >= 25 ? 'text-amber-500' : 'text-red-500'}`}>
                       {p.toFixed(0)}%
                     </span>
                   </div>

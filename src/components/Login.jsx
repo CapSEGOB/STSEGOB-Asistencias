@@ -43,7 +43,7 @@ export default function Login() {
             STSEGOB
           </h1>
           <p className="text-white/80 text-base lg:text-lg font-medium mb-2">
-            Secretaría de Seguridad del Gobierno
+            SEGOB
           </p>
           <div className="w-16 h-0.5 mx-auto my-4 rounded-full" style={{ backgroundColor: '#c79c67' }} />
           <p className="text-white/60 text-sm max-w-xs leading-relaxed">

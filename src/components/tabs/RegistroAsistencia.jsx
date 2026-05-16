@@ -88,8 +88,8 @@ export default function RegistroAsistencia({ usuario }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <IconUsers className="w-5 h-5 text-blue-700" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#409b8420' }}>
+              <IconUsers className="w-5 h-5" style={{ color: '#0e322e' }} />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-700">Asistencia en tiempo real</p>
@@ -102,13 +102,13 @@ export default function RegistroAsistencia({ usuario }) {
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="text-2xl font-black text-blue-700">{pctPresentes}%</span>
+            <span className="text-2xl font-black" style={{ color: '#0e322e' }}>{pctPresentes}%</span>
           </div>
         </div>
         <div className="mt-3 h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-blue-700 rounded-full transition-all duration-700"
-            style={{ width: `${pctPresentes}%` }}
+            className="h-full rounded-full transition-all duration-700"
+            style={{ background: 'linear-gradient(to right, #409b84, #0e322e)', width: `${pctPresentes}%` }}
           />
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function RegistroAsistencia({ usuario }) {
               placeholder="Buscar por nombre o apellido..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
+              className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition"
             />
           </div>
 
@@ -138,7 +138,7 @@ export default function RegistroAsistencia({ usuario }) {
             <select
               value={dependenciaFiltro}
               onChange={e => setDep(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition appearance-none"
+              className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition appearance-none"
             >
               <option value="">Todas las dependencias</option>
               {dependencias.map(d => <option key={d} value={d}>{d}</option>)}
@@ -149,7 +149,7 @@ export default function RegistroAsistencia({ usuario }) {
           <select
             value={salonFiltro}
             onChange={e => setSalon(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:w-44 bg-gray-50 focus:bg-white transition appearance-none"
+            className="border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#409b84] focus:border-transparent text-sm sm:w-44 bg-gray-50 focus:bg-white transition appearance-none"
           >
             <option value="">Todos los salones</option>
             {salones.map(s => <option key={s} value={s}>{s}</option>)}
@@ -182,7 +182,7 @@ export default function RegistroAsistencia({ usuario }) {
           {hasFilters && (
             <button
               onClick={() => { setSearch(''); setDep(''); setSalon(''); setSoloAusentes(false) }}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              className="text-xs font-medium" style={{ color: '#26645b' }}
             >
               Limpiar filtros
             </button>
@@ -207,7 +207,7 @@ export default function RegistroAsistencia({ usuario }) {
                 <tr>
                   <td colSpan={4} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent" style={{ borderColor: '#409b84', borderTopColor: 'transparent' }} />
                       <span className="text-xs text-gray-400">Cargando registros...</span>
                     </div>
                   </td>
@@ -227,7 +227,7 @@ export default function RegistroAsistencia({ usuario }) {
                   <tr
                     key={a.id}
                     onClick={() => setSelected(a)}
-                    className={`cursor-pointer hover:bg-blue-50/60 transition-colors group ${
+                    className={`cursor-pointer hover:bg-[#409b84]/10 transition-colors group ${
                       i % 2 === 0 ? '' : 'bg-slate-50/50'
                     }`}
                   >
