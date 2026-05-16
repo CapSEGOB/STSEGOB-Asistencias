@@ -10,11 +10,26 @@ import { IconDownload, IconRefresh, IconUsers } from '../Icons'
 
 const PIE_COLORS = ['#3b82f6', '#e2e8f0']
 
-export default function Estadisticas() {
-  const [stats, setStats]     = useState(null)
-  const [loading, setLoading] = useState(true)
+export default function Estadisticas({ usuario }) {
+  const [stats, setStats]         = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [resetting, setResetting] = useState(false)
+  const [confirm, setConfirm]     = useState(false)
+  const isAdmin = usuario?.rol === 'super_admin'
 
   useEffect(() => { fetchStats() }, [])
+
+  async function resetAsistencia() {
+    setResetting(true)
+    setConfirm(false)
+    const { error } = await supabase
+      .from('asistentes')
+      .update({ asistio: false, fecha_asistencia: null, registrado_por: null })
+      .neq('id', '00000000-0000-0000-0000-000000000000') // actualiza todos
+    setResetting(false)
+    if (!error) fetchStats()
+    else alert('Error al reiniciar: ' + error.message)
+  }
 
   async function fetchStats() {
     setLoading(true)
@@ -119,10 +134,62 @@ export default function Estadisticas() {
 
   return (
     <div className="space-y-5">
+      {/* Modal de confirmación reset */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">Reiniciar asistencia</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-5">
+              Se marcará a <strong>todos los asistentes como ausentes</strong> y se borrarán las fechas de registro. ¿Continuar?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirm(false)}
+                className="flex-1 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-xl text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={resetAsistencia}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
+              >
+                Sí, reiniciar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Acciones */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-base font-bold text-gray-800">Estadísticas del evento</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {isAdmin && (
+            <button
+              onClick={() => setConfirm(true)}
+              disabled={resetting}
+              className="flex items-center gap-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm disabled:opacity-50"
+            >
+              {resetting ? (
+                <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+              Reiniciar asistencia
+            </button>
+          )}
           <button
             onClick={fetchStats}
             className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm"

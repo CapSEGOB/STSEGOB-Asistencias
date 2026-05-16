@@ -90,7 +90,7 @@ export default function Layout({ usuario }) {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'asistencia'   && <RegistroAsistencia usuario={usuario} />}
-        {activeTab === 'estadisticas' && <Estadisticas />}
+        {activeTab === 'estadisticas' && <Estadisticas usuario={usuario} />}
         {activeTab === 'usuarios'     && isAdmin && <RegistroUsuarios />}
       </main>
     </div>
