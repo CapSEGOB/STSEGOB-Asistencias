@@ -24,13 +24,14 @@ export default function RegistroAsistencia({ usuario }) {
   const debounceRef                      = useRef(null)
 
   useEffect(() => {
-    supabase.from('asistentes').select('dependencia').order('dependencia').then(({ data }) => {
+    // Usar count+head para obtener conteo sin datos y range para los filtros
+    supabase.from('asistentes').select('dependencia', { count: 'exact' }).order('dependencia').range(0, 1999).then(({ data }) => {
       if (data) setDependencias([...new Set(data.map(d => d.dependencia))].filter(Boolean))
     })
-    supabase.from('asistentes').select('salon').order('salon').then(({ data }) => {
+    supabase.from('asistentes').select('salon', { count: 'exact' }).order('salon').range(0, 1999).then(({ data }) => {
       if (data) setSalones([...new Set(data.map(d => d.salon))].filter(Boolean))
     })
-    // Contador global de presentes
+    // Contador global de presentes — count:exact no tiene límite de filas
     supabase.from('asistentes').select('id', { count: 'exact', head: true }).eq('asistio', true)
       .then(({ count }) => setTotalPresentes(count || 0))
   }, [])

@@ -44,11 +44,27 @@ export default function Estadisticas({ usuario }) {
 
   async function fetchStats() {
     setLoading(true)
-    const [{ data: todos }, { data: presentes }] = await Promise.all([
-      supabase.from('asistentes').select('dependencia, salon, asistio'),
-      supabase.from('asistentes').select('dependencia, salon').eq('asistio', true),
+
+    // Supabase limita 1000 filas por defecto — paginamos para obtener todos
+    async function fetchAll(query) {
+      const PAGE = 1000
+      let all = [], page = 0, done = false
+      while (!done) {
+        const { data, error } = await query.range(page * PAGE, (page + 1) * PAGE - 1)
+        if (error || !data) break
+        all = all.concat(data)
+        done = data.length < PAGE
+        page++
+      }
+      return all
+    }
+
+    const [todos, presentes] = await Promise.all([
+      fetchAll(supabase.from('asistentes').select('dependencia, salon, asistio')),
+      fetchAll(supabase.from('asistentes').select('dependencia, salon').eq('asistio', true)),
     ])
-    if (!todos) { setLoading(false); return }
+
+    if (!todos.length && !presentes.length) { setLoading(false); return }
 
     const total          = todos.length
     const totalPresentes = (presentes || []).length
