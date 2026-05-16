@@ -10,6 +10,17 @@ import { IconDownload, IconRefresh, IconUsers } from '../Icons'
 
 const PIE_COLORS = ['#3b82f6', '#e2e8f0']
 
+// Genera siglas: toma la primera letra de cada palabra significativa (>2 chars)
+function toSiglas(nombre) {
+  if (!nombre) return '?'
+  return nombre
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .map(w => w[0].toUpperCase())
+    .join('')
+    .slice(0, 6) || nombre.slice(0, 4).toUpperCase()
+}
+
 export default function Estadisticas({ usuario }) {
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
@@ -45,7 +56,7 @@ export default function Estadisticas({ usuario }) {
 
     const depMap = {}
     todos.forEach(a => {
-      if (!depMap[a.dependencia]) depMap[a.dependencia] = { dependencia: a.dependencia, Invitados: 0, Presentes: 0 }
+      if (!depMap[a.dependencia]) depMap[a.dependencia] = { dependencia: a.dependencia, siglas: toSiglas(a.dependencia), Invitados: 0, Presentes: 0 }
       depMap[a.dependencia].Invitados++
     })
     ;(presentes || []).forEach(a => { if (depMap[a.dependencia]) depMap[a.dependencia].Presentes++ })
@@ -291,14 +302,18 @@ export default function Estadisticas({ usuario }) {
               <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <YAxis
                 type="category"
-                dataKey="dependencia"
-                width={180}
-                tick={{ fontSize: 10, fill: '#64748b' }}
+                dataKey="siglas"
+                width={64}
+                tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }}
+                labelFormatter={(siglas) => {
+                  const dep = stats.porDependencia.find(d => d.siglas === siglas)
+                  return dep ? dep.dependencia : siglas
+                }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="Invitados" fill="#dbeafe" radius={[0, 4, 4, 0]} />
