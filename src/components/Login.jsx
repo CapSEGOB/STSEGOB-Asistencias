@@ -3,10 +3,10 @@ import { supabase } from '../lib/supabase'
 import { IconMail, IconLock, IconShield } from './Icons'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -18,47 +18,57 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Panel izquierdo — branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex-col items-center justify-center p-12 relative overflow-hidden">
-        {/* Círculos decorativos */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-white/5" />
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-white/5" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.02]" />
+    <div className="min-h-screen flex flex-col lg:flex-row">
 
-        <div className="relative z-10 text-center">
-          {/* Logo */}
-          <div className="w-24 h-24 bg-white/10 backdrop-blur rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/20 shadow-2xl">
-            <span className="text-white text-4xl font-black tracking-tight">ST</span>
-          </div>
-          <h1 className="text-4xl font-black text-white mb-3 tracking-tight">STSEGOB</h1>
-          <p className="text-blue-200 text-lg font-medium mb-2">Secretaría de Seguridad del Gobierno</p>
-          <div className="w-16 h-0.5 bg-amber-400 mx-auto my-6 rounded-full" />
-          <p className="text-blue-300 text-sm max-w-xs leading-relaxed">
+      {/* Panel izquierdo — branding con imagen */}
+      <div
+        className="relative lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16 overflow-hidden"
+        style={{
+          backgroundImage: 'url(/bg-login.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay oscuro para legibilidad */}
+        <div className="absolute inset-0 bg-[#0e322e]/80" />
+
+        {/* Contenido */}
+        <div className="relative z-10 text-center flex flex-col items-center">
+          <img
+            src="/logogob.png"
+            alt="Logo SEGOB"
+            className="h-24 lg:h-32 w-auto mb-6 drop-shadow-2xl"
+          />
+          <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight mb-2">
+            STSEGOB
+          </h1>
+          <p className="text-white/80 text-base lg:text-lg font-medium mb-2">
+            Secretaría de Seguridad del Gobierno
+          </p>
+          <div className="w-16 h-0.5 mx-auto my-4 rounded-full" style={{ backgroundColor: '#c79c67' }} />
+          <p className="text-white/60 text-sm max-w-xs leading-relaxed">
             Sistema Oficial de Control de Asistencia para eventos institucionales.
           </p>
-
-          <div className="mt-12 flex items-center justify-center gap-2 text-blue-300 text-xs">
-            <IconShield className="w-4 h-4 text-amber-400" />
+          <div className="mt-8 flex items-center gap-2 text-white/50 text-xs">
+            <IconShield className="w-3.5 h-3.5" style={{ color: '#c79c67' }} />
             <span>Acceso restringido a personal autorizado</span>
           </div>
         </div>
       </div>
 
       {/* Panel derecho — formulario */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-white lg:bg-slate-50">
         <div className="w-full max-w-md">
-          {/* Logo mobile */}
+
+          {/* Logo solo móvil (cuando el panel izq queda arriba) */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <span className="text-white text-2xl font-black">ST</span>
-            </div>
-            <h1 className="text-xl font-black text-blue-900">STSEGOB</h1>
-            <p className="text-gray-500 text-sm">Secretaría de Seguridad del Gobierno</p>
+            <img src="/logogob.png" alt="Logo SEGOB" className="h-16 w-auto mx-auto mb-3" />
+            <h1 className="text-xl font-black" style={{ color: '#0e322e' }}>STSEGOB</h1>
+            <p className="text-gray-500 text-sm">Control de Asistencia</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="mb-8">
+            <div className="mb-7">
               <h2 className="text-2xl font-bold text-gray-900">Iniciar sesión</h2>
               <p className="text-gray-500 text-sm mt-1">Ingresa tus credenciales para continuar</p>
             </div>
@@ -78,7 +88,10 @@ export default function Login() {
                     onChange={e => setEmail(e.target.value)}
                     required
                     autoComplete="email"
-                    className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm bg-gray-50 focus:bg-white"
+                    className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition text-sm bg-gray-50 focus:bg-white"
+                    style={{ '--tw-ring-color': '#409b84' }}
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #409b8460'}
+                    onBlur={e => e.target.style.boxShadow = ''}
                     placeholder="usuario@stsegob.gob.mx"
                   />
                 </div>
@@ -98,7 +111,9 @@ export default function Login() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm bg-gray-50 focus:bg-white"
+                    className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none transition text-sm bg-gray-50 focus:bg-white"
+                    onFocus={e => e.target.style.boxShadow = '0 0 0 2px #409b8460'}
+                    onBlur={e => e.target.style.boxShadow = ''}
                     placeholder="••••••••"
                   />
                 </div>
@@ -114,7 +129,10 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-800 hover:bg-blue-900 disabled:bg-blue-400 text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.99] text-sm mt-2"
+                className="w-full text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.99] text-sm mt-2 disabled:opacity-60"
+                style={{ backgroundColor: '#0e322e' }}
+                onMouseEnter={e => !loading && (e.target.style.backgroundColor = '#26645b')}
+                onMouseLeave={e => e.target.style.backgroundColor = '#0e322e'}
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">

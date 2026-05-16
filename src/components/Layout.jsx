@@ -24,27 +24,31 @@ export default function Layout({ usuario }) {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <header className="bg-blue-950 text-white shadow-xl">
+      <header className="text-white shadow-xl" style={{ backgroundColor: '#0e322e' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
             {/* Branding */}
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 flex-shrink-0">
-                <span className="text-white text-sm font-black">ST</span>
-              </div>
+              <img
+                src="/logogob.png"
+                alt="Logo"
+                className="h-9 w-auto drop-shadow"
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-base font-bold text-white leading-none">STSEGOB</h1>
-                  <span className="hidden sm:inline text-blue-400 text-xs">—</span>
-                  <span className="hidden sm:inline text-blue-300 text-xs font-medium">Control de Asistencia</span>
+                  <span className="hidden sm:inline text-white/40 text-xs">—</span>
+                  <span className="hidden sm:inline text-white/60 text-xs font-medium">Control de Asistencia</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-blue-300 text-xs truncate max-w-[160px]">{usuario.nombre}</span>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                    isAdmin
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                  }`}>
+                  <span className="text-white/60 text-xs truncate max-w-[160px]">{usuario.nombre}</span>
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border"
+                    style={isAdmin
+                      ? { backgroundColor: '#c79c6720', color: '#c79c67', borderColor: '#c79c6740' }
+                      : { backgroundColor: '#409b8420', color: '#409b84', borderColor: '#409b8440' }
+                    }
+                  >
                     {isAdmin ? 'Admin' : 'Staff'}
                   </span>
                 </div>
@@ -64,7 +68,7 @@ export default function Layout({ usuario }) {
 
         {/* Tabs nav */}
         <div className="border-t border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex overflow-x-auto scrollbar-hide">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex overflow-x-auto">
             {tabs.map(tab => {
               const Icon = tab.icon
               const active = activeTab === tab.id
@@ -72,11 +76,11 @@ export default function Layout({ usuario }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                    active
-                      ? 'border-amber-400 text-white'
-                      : 'border-transparent text-blue-300 hover:text-white hover:border-blue-400'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all"
+                  style={active
+                    ? { borderColor: '#c79c67', color: '#fff' }
+                    : { borderColor: 'transparent', color: 'rgba(255,255,255,0.55)' }
+                  }
                 >
                   <Icon className="w-3.5 h-3.5" />
                   {tab.label}
