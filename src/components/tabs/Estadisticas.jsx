@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  PieChart, Pie, Cell, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { supabase } from '../../lib/supabase'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { IconDownload, IconRefresh, IconUsers } from '../Icons'
-
-const PIE_COLORS = ['#3b82f6', '#e2e8f0']
 
 // Genera siglas: toma la primera letra de cada palabra significativa (>2 chars)
 function toSiglas(nombre) {
@@ -180,230 +177,186 @@ export default function Estadisticas({ usuario }) {
               Se marcará a <strong>todos los asistentes como ausentes</strong> y se borrarán las fechas de registro. ¿Continuar?
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setConfirm(false)}
-                className="flex-1 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-xl text-sm transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={resetAsistencia}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
-              >
-                Sí, reiniciar
-              </button>
+              <button onClick={() => setConfirm(false)} className="flex-1 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-xl text-sm transition-colors">Cancelar</button>
+              <button onClick={resetAsistencia} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-xl text-sm transition-colors">Sí, reiniciar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Acciones */}
+      {/* Header acciones */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-base font-bold text-gray-800">Estadísticas del evento</h2>
         <div className="flex gap-2 flex-wrap">
           {isAdmin && (
-            <button
-              onClick={() => setConfirm(true)}
-              disabled={resetting}
-              className="flex items-center gap-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm disabled:opacity-50"
-            >
-              {resetting ? (
-                <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
+            <button onClick={() => setConfirm(true)} disabled={resetting}
+              className="flex items-center gap-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm disabled:opacity-50">
+              {resetting
+                ? <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              }
               Reiniciar asistencia
             </button>
           )}
-          <button
-            onClick={fetchStats}
-            className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm"
-          >
-            <IconRefresh className="w-3.5 h-3.5" />
-            Actualizar
+          <button onClick={fetchStats} className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm">
+            <IconRefresh className="w-3.5 h-3.5" /> Actualizar
           </button>
-          <button
-            onClick={exportPDF}
-            className="flex items-center gap-1.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm"
-          >
-            <IconDownload className="w-3.5 h-3.5" />
-            Descargar PDF
+          <button onClick={exportPDF} className="flex items-center gap-1.5 bg-blue-800 hover:bg-blue-900 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm">
+            <IconDownload className="w-3.5 h-3.5" /> Descargar PDF
           </button>
         </div>
       </div>
 
-      {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard
-          label="Total invitados"
-          value={stats.total}
-          icon={<IconUsers className="w-5 h-5" />}
-          color="blue"
-          sub="registrados en el sistema"
-        />
-        <KpiCard
-          label="Presentes"
-          value={stats.totalPresentes}
-          icon={<CheckCircleIcon />}
-          color="green"
-          sub={`${pct}% del total`}
-        />
-        <KpiCard
-          label="Ausentes"
-          value={stats.totalAusentes}
-          icon={<ClockIcon />}
-          color="slate"
-          sub={`${(100 - parseFloat(pct)).toFixed(1)}% del total`}
-        />
-      </div>
-
-      {/* Gráfico pastel + barra progreso */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-sm font-bold text-gray-700 mb-5">Asistencia General</h3>
-        <div className="flex flex-col sm:flex-row items-center gap-8">
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%" cy="50%"
-                outerRadius={80}
-                innerRadius={48}
-                dataKey="value"
-                paddingAngle={2}
-              >
-                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-              </Pie>
-              <Tooltip formatter={(v) => v.toLocaleString('es-MX')} />
-            </PieChart>
-          </ResponsiveContainer>
-
-          <div className="flex-shrink-0 text-center sm:text-left">
-            <div className="text-6xl font-black text-blue-700 leading-none">{pct}%</div>
-            <div className="text-gray-500 text-sm mt-2 font-medium">de asistencia</div>
-            <div className="mt-4 space-y-2">
-              <LegendItem label="Presentes" color="#3b82f6" value={stats.totalPresentes} />
-              <LegendItem label="Ausentes"  color="#e2e8f0" value={stats.totalAusentes} textColor="text-gray-400" />
+      {/* KPIs + Donut en una fila */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Donut */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center justify-center">
+          <div className="relative">
+            <svg viewBox="0 0 120 120" className="w-36 h-36 -rotate-90">
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f5f9" strokeWidth="16" />
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#1d4ed8" strokeWidth="16"
+                strokeDasharray={`${(parseFloat(pct) / 100) * 301.59} 301.59`}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dasharray 1s ease' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-black text-blue-700">{pct}%</span>
+              <span className="text-xs text-gray-400 font-medium">asistencia</span>
+            </div>
+          </div>
+          <div className="mt-4 w-full space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"/><span className="text-gray-600">Presentes</span></div>
+              <span className="font-bold text-blue-700">{stats.totalPresentes.toLocaleString('es-MX')}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-200 inline-block"/><span className="text-gray-600">Ausentes</span></div>
+              <span className="font-bold text-slate-500">{stats.totalAusentes.toLocaleString('es-MX')}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2"><IconUsers className="w-3.5 h-3.5 text-gray-400"/><span className="text-gray-600">Total</span></div>
+              <span className="font-bold text-gray-700">{stats.total.toLocaleString('es-MX')}</span>
             </div>
           </div>
         </div>
 
-        {/* Barra de progreso grande */}
-        <div className="mt-6">
-          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-            <span>Progreso de asistencia</span>
-            <span className="font-semibold text-blue-700">{pct}%</span>
+        {/* KPI stack */}
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-4">
+          {/* Barra progreso grande */}
+          <div className="sm:col-span-3 lg:col-span-1 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-6 text-white flex items-center justify-between gap-6">
+            <div>
+              <div className="text-xs font-medium text-blue-200 uppercase tracking-widest mb-1">Progreso general</div>
+              <div className="text-5xl font-black">{pct}<span className="text-2xl font-bold text-blue-300">%</span></div>
+              <div className="text-sm text-blue-200 mt-1">{stats.totalPresentes.toLocaleString('es-MX')} de {stats.total.toLocaleString('es-MX')} asistentes</div>
+            </div>
+            <div className="flex-shrink-0 w-16">
+              <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3.5"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="white" strokeWidth="3.5"
+                  strokeDasharray={`${(parseFloat(pct) / 100) * 100} 100`} strokeLinecap="round"/>
+              </svg>
+            </div>
           </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-700 rounded-full transition-all duration-700"
-              style={{ width: `${pct}%` }}
-            />
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <CheckCircleIcon className="text-emerald-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-black text-emerald-700">{stats.totalPresentes.toLocaleString('es-MX')}</div>
+              <div className="text-xs text-gray-500 font-medium">Presentes · {pct}%</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ClockIcon className="text-slate-500" />
+            </div>
+            <div>
+              <div className="text-2xl font-black text-slate-600">{stats.totalAusentes.toLocaleString('es-MX')}</div>
+              <div className="text-xs text-gray-500 font-medium">Ausentes · {(100 - parseFloat(pct)).toFixed(1)}%</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Por dependencia */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-sm font-bold text-gray-700 mb-5">Por Dependencia</h3>
-        <div className="overflow-x-auto">
-          <ResponsiveContainer width="100%" height={Math.max(280, stats.porDependencia.length * 36)}>
-            <BarChart
-              data={stats.porDependencia}
-              layout="vertical"
-              margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-              <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis
-                type="category"
-                dataKey="siglas"
-                width={64}
-                tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                cursor={{ fill: 'rgba(99,102,241,0.06)' }}
-                contentStyle={{ borderRadius: '12px', border: '1px solid #e0e7ff', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12, padding: '10px 14px' }}
-                labelStyle={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 4 }}
-                labelFormatter={(siglas) => {
-                  const dep = stats.porDependencia.find(d => d.siglas === siglas)
-                  return dep ? dep.dependencia : siglas
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Invitados" fill="#dbeafe" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="Presentes" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Tabla por dependencia */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-gray-800">Asistencia por Dependencia</h3>
+          <span className="text-xs text-gray-400">{stats.porDependencia.length} dependencias</span>
+        </div>
+        <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+          {stats.porDependencia.map((d, i) => {
+            const p = d.Invitados > 0 ? (d.Presentes / d.Invitados) * 100 : 0
+            const color = p >= 75 ? 'bg-emerald-500' : p >= 50 ? 'bg-blue-500' : p >= 25 ? 'bg-amber-400' : 'bg-red-400'
+            return (
+              <div key={d.dependencia} className="px-6 py-3 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-[11px] font-bold text-gray-400 w-5 text-right flex-shrink-0">{i + 1}</span>
+                    <span className="text-xs font-semibold text-gray-700 truncate" title={d.dependencia}>{d.dependencia}</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                    <span className="text-xs text-gray-400">{d.Presentes}<span className="text-gray-300">/{d.Invitados}</span></span>
+                    <span className={`text-xs font-bold w-11 text-right ${p >= 75 ? 'text-emerald-600' : p >= 50 ? 'text-blue-600' : p >= 25 ? 'text-amber-500' : 'text-red-500'}`}>
+                      {p.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pl-7">
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${p}%` }} />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
       {/* Por salón */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-sm font-bold text-gray-700 mb-5">Por Salón</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={stats.porSalon} margin={{ top: 0, right: 20, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="salon" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} angle={-15} textAnchor="end" />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }}
-            />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="Invitados" fill="#fde68a" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Presentes" fill="#d97706" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
-}
-
-function KpiCard({ label, value, icon, color, sub }) {
-  const colors = {
-    blue:  { bg: 'bg-blue-50',  border: 'border-blue-100',  icon: 'bg-blue-100 text-blue-700',  text: 'text-blue-800'  },
-    green: { bg: 'bg-green-50', border: 'border-green-100', icon: 'bg-green-100 text-green-700', text: 'text-green-800' },
-    slate: { bg: 'bg-slate-50', border: 'border-slate-100', icon: 'bg-slate-100 text-slate-500', text: 'text-slate-700' },
-  }
-  const c = colors[color]
-  return (
-    <div className={`rounded-2xl border-2 ${c.bg} ${c.border} p-5`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${c.icon}`}>
-          {icon}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-gray-800">Asistencia por Salón</h3>
+          <span className="text-xs text-gray-400">{stats.porSalon.length} salones</span>
+        </div>
+        <div className="p-6">
+          <ResponsiveContainer width="100%" height={Math.max(200, stats.porSalon.length * 52)}>
+            <BarChart data={stats.porSalon} layout="vertical" margin={{ top: 0, right: 60, left: 80, bottom: 0 }} barCategoryGap="30%">
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
+              <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="salon" width={80} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: 'rgba(99,102,241,0.05)' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontSize: 12, padding: '10px 14px' }}
+                labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 6 }}
+              />
+              <Bar dataKey="Invitados" name="Invitados" fill="#e0e7ff" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="Presentes" name="Presentes" fill="#4f46e5" radius={[0, 4, 4, 0]}
+                label={{ position: 'right', fontSize: 11, fill: '#4f46e5', fontWeight: 700 }} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 justify-center mt-4">
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-200 inline-block"/><span className="text-xs text-gray-500">Invitados</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-600 inline-block"/><span className="text-xs text-gray-500">Presentes</span></div>
+          </div>
         </div>
       </div>
-      <div className={`text-4xl font-black ${c.text}`}>{value.toLocaleString('es-MX')}</div>
-      <div className="text-sm font-semibold text-gray-600 mt-1">{label}</div>
-      {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
     </div>
   )
 }
 
-function LegendItem({ label, color, value, textColor = 'text-gray-700' }) {
+function CheckCircleIcon({ className = 'w-5 h-5' }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-xs text-gray-500">{label}:</span>
-      <span className={`text-xs font-bold ${textColor}`}>{value.toLocaleString('es-MX')}</span>
-    </div>
-  )
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
     </svg>
   )
 }
 
-function ClockIcon() {
+function ClockIcon({ className = 'w-5 h-5' }) {
   return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
     </svg>
   )
