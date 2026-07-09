@@ -6,15 +6,49 @@ import { supabase } from '../../lib/supabase'
 import { partidoInfo, PARTIDOS_ORDEN } from '../../lib/partidos'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import { IconDownload, IconRefresh, IconUsers, IconUserGroup } from '../Icons'
 
 const DIA_LABEL = { 1: 'Día 1 (jue)', 2: 'Día 2 (vie)', 3: 'Día 3 (lun)', 4: 'Día 4 (mar)' }
+
+// Días en orden para los reportes (incluye "sin día" al final).
+const DIAS_REPORTE = [
+  { dia: 1,    label: 'Día 1 (jue 09)' },
+  { dia: 2,    label: 'Día 2 (vie 10)' },
+  { dia: 3,    label: 'Día 3 (lun 13)' },
+  { dia: 4,    label: 'Día 4 (mar 14)' },
+  { dia: null, label: 'Sin día' },
+]
+
+const horaRegistro = f => f
+  ? new Date(f).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  : ''
+
+const porMunicipio = (a, b) => (a.municipio || '').localeCompare(b.municipio || '', 'es')
+
+// Trae todas las filas con detalle, paginando el límite de PostgREST.
+async function fetchDetalle() {
+  const PAGE = 1000
+  let all = [], page = 0, done = false
+  while (!done) {
+    const { data, error } = await supabase
+      .from('presidentes_municipales')
+      .select('municipio, nombre, partido, telefono, responsable, dia, asistio, acompanante, confirmacion, fecha_asistencia')
+      .range(page * PAGE, (page + 1) * PAGE - 1)
+    if (error || !data) break
+    all = all.concat(data)
+    done = data.length < PAGE
+    page++
+  }
+  return all
+}
 
 export default function Estadisticas({ usuario }) {
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
   const [resetting, setResetting] = useState(false)
   const [confirm, setConfirm]     = useState(false)
+  const [exporting, setExporting] = useState(null) // 'pdf' | 'excel' | null
   const isAdmin = usuario?.rol === 'super_admin'
 
   useEffect(() => { fetchStats() }, [])
@@ -87,45 +121,119 @@ export default function Estadisticas({ usuario }) {
     setLoading(false)
   }
 
-  function exportPDF() {
+  // Reporte PDF: resumen + listas de presentes/ausentes por día.
+  async function exportPDF() {
     if (!stats) return
-    const doc = new jsPDF()
-    const now = new Date().toLocaleString('es-MX')
-    const pct = stats.total > 0 ? ((stats.totalPresentes / stats.total) * 100).toFixed(1) : '0.0'
+    setExporting('pdf')
+    try {
+      const rows = await fetchDetalle()
+      const doc = new jsPDF()
+      const now = new Date().toLocaleString('es-MX')
+      const pct = stats.total > 0 ? ((stats.totalPresentes / stats.total) * 100).toFixed(1) : '0.0'
 
-    doc.setFontSize(18); doc.setTextColor(14, 50, 46)
-    doc.text('STSEGOB — Asistencia Presidentes Municipales', 14, 22)
-    doc.setFontSize(10); doc.setTextColor(100)
-    doc.text(`Generado: ${now}`, 14, 30)
-    doc.setFontSize(13); doc.setTextColor(0)
-    doc.text('Resumen General', 14, 44)
-    autoTable(doc, {
-      startY: 48,
-      head: [['Total', 'Presentes', 'Ausentes', 'Acompañantes', '% Asistencia']],
-      body: [[stats.total, stats.totalPresentes, stats.totalAusentes, stats.acompanantes, `${pct}%`]],
-      headStyles: { fillColor: [14, 50, 46] },
-    })
-    doc.text('Asistencia por Día', 14, doc.lastAutoTable.finalY + 14)
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 18,
-      head: [['Día', 'Presidentes', 'Presentes', 'Ausentes', '%']],
-      body: stats.porDia.map(d => [
-        d.key, d.Invitados, d.Presentes, d.Invitados - d.Presentes,
-        d.Invitados > 0 ? `${((d.Presentes / d.Invitados) * 100).toFixed(1)}%` : '0.0%',
-      ]),
-      headStyles: { fillColor: [14, 50, 46] },
-    })
-    doc.text('Asistencia por Partido', 14, doc.lastAutoTable.finalY + 14)
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 18,
-      head: [['Partido', 'Presidentes', 'Presentes', 'Ausentes', '%']],
-      body: stats.porPartido.map(p => [
-        p.label, p.Invitados, p.Presentes, p.Invitados - p.Presentes,
-        p.Invitados > 0 ? `${((p.Presentes / p.Invitados) * 100).toFixed(1)}%` : '0.0%',
-      ]),
-      headStyles: { fillColor: [14, 50, 46] },
-    })
-    doc.save(`reporte-presidentes-${Date.now()}.pdf`)
+      doc.setFontSize(18); doc.setTextColor(14, 50, 46)
+      doc.text('STSEGOB — Asistencia Presidentes Municipales', 14, 22)
+      doc.setFontSize(10); doc.setTextColor(100)
+      doc.text(`Generado: ${now}`, 14, 30)
+      doc.setFontSize(13); doc.setTextColor(0)
+      doc.text('Resumen General', 14, 44)
+      autoTable(doc, {
+        startY: 48,
+        head: [['Total', 'Presentes', 'Ausentes', 'Acompañantes', '% Asistencia']],
+        body: [[stats.total, stats.totalPresentes, stats.totalAusentes, stats.acompanantes, `${pct}%`]],
+        headStyles: { fillColor: [14, 50, 46] },
+      })
+      doc.text('Asistencia por Día', 14, doc.lastAutoTable.finalY + 14)
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 18,
+        head: [['Día', 'Presidentes', 'Presentes', 'Ausentes', '%']],
+        body: stats.porDia.map(d => [
+          d.key, d.Invitados, d.Presentes, d.Invitados - d.Presentes,
+          d.Invitados > 0 ? `${((d.Presentes / d.Invitados) * 100).toFixed(1)}%` : '0.0%',
+        ]),
+        headStyles: { fillColor: [14, 50, 46] },
+      })
+
+      // Listas por día: presentes y ausentes
+      for (const { dia, label } of DIAS_REPORTE) {
+        const grupo = rows.filter(r => r.dia === dia).sort(porMunicipio)
+        if (!grupo.length) continue
+        const presentes = grupo.filter(r => r.asistio)
+        const ausentes  = grupo.filter(r => !r.asistio)
+
+        doc.addPage()
+        doc.setFontSize(14); doc.setTextColor(14, 50, 46)
+        doc.text(`${label}`, 14, 20)
+        doc.setFontSize(10); doc.setTextColor(100)
+        doc.text(`Presidentes: ${grupo.length}  ·  Presentes: ${presentes.length}  ·  Ausentes: ${ausentes.length}`, 14, 27)
+
+        doc.setFontSize(12); doc.setTextColor(21, 128, 61)
+        doc.text(`Asistieron (${presentes.length})`, 14, 37)
+        autoTable(doc, {
+          startY: 40,
+          head: [['Municipio', 'Presidente', 'Partido', 'Teléfono', 'Responsable', 'Hora', 'Acomp.']],
+          body: presentes.map(r => [
+            r.municipio, r.nombre, partidoInfo(r.partido).label, r.telefono || '',
+            r.responsable || '', horaRegistro(r.fecha_asistencia), r.acompanante ? 'Sí' : 'No',
+          ]),
+          styles: { fontSize: 8, cellPadding: 1.5 },
+          headStyles: { fillColor: [21, 128, 61], fontSize: 8 },
+        })
+
+        doc.setFontSize(12); doc.setTextColor(185, 28, 28)
+        doc.text(`No asistieron (${ausentes.length})`, 14, doc.lastAutoTable.finalY + 10)
+        autoTable(doc, {
+          startY: doc.lastAutoTable.finalY + 13,
+          head: [['Municipio', 'Presidente', 'Partido', 'Teléfono', 'Responsable', 'RSVP previo']],
+          body: ausentes.map(r => [
+            r.municipio, r.nombre, partidoInfo(r.partido).label, r.telefono || '',
+            r.responsable || '', r.confirmacion || '',
+          ]),
+          styles: { fontSize: 8, cellPadding: 1.5 },
+          headStyles: { fillColor: [185, 28, 28], fontSize: 8 },
+        })
+      }
+
+      doc.save(`listas-presidentes-${now.replace(/[/:, ]/g, '-')}.pdf`)
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  // Reporte Excel: una pestaña por día con estado presente/ausente.
+  async function exportExcel() {
+    setExporting('excel')
+    try {
+      const rows = await fetchDetalle()
+      const wb = XLSX.utils.book_new()
+      for (const { dia, label } of DIAS_REPORTE) {
+        const grupo = rows.filter(r => r.dia === dia)
+        if (!grupo.length) continue
+        // Presentes primero, luego ausentes; dentro, por municipio
+        grupo.sort((a, b) => (a.asistio === b.asistio ? porMunicipio(a, b) : a.asistio ? -1 : 1))
+        const data = grupo.map(r => ({
+          Municipio: r.municipio,
+          Presidente: r.nombre,
+          Partido: partidoInfo(r.partido).label,
+          Teléfono: r.telefono || '',
+          Responsable: r.responsable || '',
+          Estado: r.asistio ? 'Presente' : 'Ausente',
+          'Hora registro': r.asistio ? horaRegistro(r.fecha_asistencia) : '',
+          Acompañante: r.asistio ? (r.acompanante ? 'Sí' : 'No') : '',
+          'RSVP previo': r.confirmacion || '',
+        }))
+        const ws = XLSX.utils.json_to_sheet(data)
+        ws['!cols'] = [
+          { wch: 24 }, { wch: 30 }, { wch: 14 }, { wch: 16 },
+          { wch: 16 }, { wch: 10 }, { wch: 14 }, { wch: 11 }, { wch: 12 },
+        ]
+        XLSX.utils.book_append_sheet(wb, ws, label.replace(/[[\]:*?/\\]/g, '').slice(0, 31))
+      }
+      const now = new Date().toLocaleString('es-MX').replace(/[/:, ]/g, '-')
+      XLSX.writeFile(wb, `listas-presidentes-${now}.xlsx`)
+    } finally {
+      setExporting(null)
+    }
   }
 
   if (loading) {
@@ -185,8 +293,19 @@ export default function Estadisticas({ usuario }) {
           <button onClick={fetchStats} className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-medium px-3 py-2 rounded-xl transition-colors text-xs shadow-sm">
             <IconRefresh className="w-3.5 h-3.5" /> Actualizar
           </button>
-          <button onClick={exportPDF} className="flex items-center gap-1.5 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm" style={{ backgroundColor: '#0e322e' }}>
-            <IconDownload className="w-3.5 h-3.5" /> Descargar PDF
+          <button onClick={exportExcel} disabled={!!exporting}
+            className="flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm disabled:opacity-50">
+            {exporting === 'excel'
+              ? <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+              : <IconDownload className="w-3.5 h-3.5" />}
+            Descargar Excel
+          </button>
+          <button onClick={exportPDF} disabled={!!exporting}
+            className="flex items-center gap-1.5 text-white font-semibold px-4 py-2 rounded-xl transition-colors text-xs shadow-sm disabled:opacity-50" style={{ backgroundColor: '#0e322e' }}>
+            {exporting === 'pdf'
+              ? <div className="w-3.5 h-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              : <IconDownload className="w-3.5 h-3.5" />}
+            Descargar PDF
           </button>
         </div>
       </div>
