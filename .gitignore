@@ -2,3 +2,6 @@ node_modules
 dist
 .env
 .env.local
+
+# Respaldos y datos con información personal (teléfonos, nombres, Excel de gira)
+respaldos/
