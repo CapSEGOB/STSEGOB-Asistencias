@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import RegistroAsistencia from './tabs/RegistroAsistencia'
 import RegistroPresidentes from './tabs/RegistroPresidentes'
 import RegistroUsuarios from './tabs/RegistroUsuarios'
 import Estadisticas from './tabs/Estadisticas'
-import { IconClipboard, IconUsers, IconChart, IconLogout, IconUserPlus, IconPin } from './Icons'
+import { IconChart, IconLogout, IconUserPlus, IconPin } from './Icons'
 
 const TABS = [
-  { id: 'asistencia',   label: 'Registro de Asistencia', icon: IconClipboard, roles: ['super_admin', 'staff'] },
-  { id: 'presidentes',  label: 'Presidentes Municipales', icon: IconPin,      roles: ['super_admin', 'staff'] },
-  { id: 'estadisticas', label: 'Estadísticas',           icon: IconChart,     roles: ['super_admin', 'staff'] },
-  { id: 'usuarios',     label: 'Usuarios',               icon: IconUserPlus,  roles: ['super_admin'] },
+  { id: 'presidentes',  label: 'Presidentes Municipales', icon: IconPin,     roles: ['super_admin', 'staff'] },
+  { id: 'estadisticas', label: 'Estadísticas',           icon: IconChart,    roles: ['super_admin', 'staff'] },
+  { id: 'usuarios',     label: 'Usuarios',               icon: IconUserPlus, roles: ['super_admin'] },
 ]
 
 export default function Layout({ usuario }) {
@@ -95,7 +93,6 @@ export default function Layout({ usuario }) {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {activeTab === 'asistencia'   && <RegistroAsistencia usuario={usuario} />}
         {activeTab === 'presidentes'  && <RegistroPresidentes usuario={usuario} />}
         {activeTab === 'estadisticas' && <Estadisticas usuario={usuario} />}
         {activeTab === 'usuarios'     && isAdmin && <RegistroUsuarios />}
