@@ -3,36 +3,18 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { supabase } from '../../lib/supabase'
-import { partidoInfo, PARTIDOS_ORDEN } from '../../lib/partidos'
+import { distritoInfo, DISTRITOS_ORDEN, normDistrito } from '../../lib/distritos'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
-import { IconDownload, IconRefresh, IconUsers, IconUserGroup } from '../Icons'
-
-const DIA_LABEL = { 1: 'Día 1 (jue)', 2: 'Día 2 (vie)', 3: 'Día 3 (lun)', 4: 'Día 4 (mar)' }
-
-// Días en orden para los reportes (incluye "sin día" al final).
-const DIAS_REPORTE = [
-  { dia: 1,    label: 'Día 1 (jue 09)' },
-  { dia: 2,    label: 'Día 2 (vie 10)' },
-  { dia: 3,    label: 'Día 3 (lun 13)' },
-  { dia: 4,    label: 'Día 4 (mar 14)' },
-  { dia: null, label: 'Sin día' },
-]
+import { IconDownload, IconRefresh, IconUsers } from '../Icons'
 
 const horaRegistro = f => f
   ? new Date(f).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   : ''
 
-const porMunicipio = (a, b) => (a.municipio || '').localeCompare(b.municipio || '', 'es')
-
-// Quién representó al municipio (para los reportes).
-const quienRepresento = r => {
-  if (r.presidente_asistio && r.acompanante_asistio) return 'Presidente + acompañante'
-  if (r.presidente_asistio) return 'Presidente'
-  if (r.acompanante_asistio) return 'Acompañante (rep.)'
-  return ''
-}
+const porMunicipio = (a, b) => (a.municipio_origen || '').localeCompare(b.municipio_origen || '', 'es')
+const ordenDistrito = k => { const i = DISTRITOS_ORDEN.map(normDistrito).indexOf(normDistrito(k)); return i === -1 ? 99 : i }
 
 // Trae todas las filas con detalle, paginando el límite de PostgREST.
 async function fetchDetalle() {
@@ -40,8 +22,9 @@ async function fetchDetalle() {
   let all = [], page = 0, done = false
   while (!done) {
     const { data, error } = await supabase
-      .from('presidentes_municipales')
-      .select('municipio, nombre, partido, telefono, responsable, dia, asistio, presidente_asistio, acompanante_asistio, acompanante_nombre, confirmacion, fecha_asistencia')
+      .from('consejeros_desayuno')
+      .select('numero, distrito, municipio_origen, nombre, telefono, confirmacion, asistio, fecha_asistencia, observaciones')
+      .order('numero')
       .range(page * PAGE, (page + 1) * PAGE - 1)
     if (error || !data) break
     all = all.concat(data)
@@ -51,7 +34,7 @@ async function fetchDetalle() {
   return all
 }
 
-export default function Estadisticas({ usuario }) {
+export default function EstadisticasConsejeros({ usuario }) {
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
   const [resetting, setResetting] = useState(false)
@@ -65,12 +48,8 @@ export default function Estadisticas({ usuario }) {
     setResetting(true)
     setConfirm(false)
     const { error } = await supabase
-      .from('presidentes_municipales')
-      .update({
-        asistio: false, acompanante: false,
-        presidente_asistio: false, acompanante_asistio: false, acompanante_nombre: null,
-        fecha_asistencia: null, registrado_por: null,
-      })
+      .from('consejeros_desayuno')
+      .update({ asistio: false, fecha_asistencia: null, registrado_por: null })
       .neq('id', '00000000-0000-0000-0000-000000000000')
     setResetting(false)
     if (!error) fetchStats()
@@ -94,49 +73,38 @@ export default function Estadisticas({ usuario }) {
     }
 
     const todos = await fetchAll(
-      supabase.from('presidentes_municipales').select('dia, partido, asistio, presidente_asistio, acompanante_asistio, confirmacion')
+      supabase.from('consejeros_desayuno').select('distrito, asistio, confirmacion')
     )
 
     if (!todos.length) { setStats(null); setLoading(false); return }
 
     const total          = todos.length
-    const totalPresentes = todos.filter(p => p.asistio).length
+    const totalPresentes = todos.filter(c => c.asistio).length
     const totalAusentes  = total - totalPresentes
-    const acompanantes   = todos.filter(p => p.acompanante_asistio).length
-    // Municipios representados SOLO por el acompañante (presidente ausente).
-    const soloAcompanante = todos.filter(p => p.acompanante_asistio && !p.presidente_asistio).length
-    const presidentesEnPersona = todos.filter(p => p.presidente_asistio).length
 
-    // Por día (1-4 + sin día)
-    const dias = [1, 2, 3, 4].map(d => {
-      const grupo = todos.filter(p => p.dia === d)
-      return { key: DIA_LABEL[d], Invitados: grupo.length, Presentes: grupo.filter(p => p.asistio).length }
+    // Por distrito
+    const distMap = {}
+    todos.forEach(c => {
+      const key = c.distrito || 'Sin distrito'
+      if (!distMap[key]) distMap[key] = { distrito: key, label: distritoInfo(c.distrito).label, color: distritoInfo(c.distrito).color, Invitados: 0, Presentes: 0 }
+      distMap[key].Invitados++
+      if (c.asistio) distMap[key].Presentes++
     })
-    const sinDia = todos.filter(p => p.dia == null)
-    if (sinDia.length) dias.push({ key: 'Sin día', Invitados: sinDia.length, Presentes: sinDia.filter(p => p.asistio).length })
-    const porDia = dias.filter(d => d.Invitados > 0)
-
-    // Por partido
-    const partMap = {}
-    todos.forEach(p => {
-      const key = (p.partido || 'Sin partido')
-      if (!partMap[key]) partMap[key] = { partido: key, label: partidoInfo(p.partido).label, color: partidoInfo(p.partido).color, Invitados: 0, Presentes: 0 }
-      partMap[key].Invitados++
-      if (p.asistio) partMap[key].Presentes++
-    })
-    const orden = k => { const i = PARTIDOS_ORDEN.indexOf(k); return i === -1 ? 99 : i }
-    const porPartido = Object.values(partMap).sort((a, b) => orden(a.partido) - orden(b.partido) || b.Invitados - a.Invitados)
+    const porDistrito = Object.values(distMap).sort((a, b) => ordenDistrito(a.distrito) - ordenDistrito(b.distrito) || b.Invitados - a.Invitados)
+    // Para la gráfica de barras (etiqueta corta)
+    const porDistritoChart = porDistrito.map(d => ({ key: d.label, Invitados: d.Invitados, Presentes: d.Presentes }))
 
     // RSVP
-    const rsvpAsiste = todos.filter(p => /^ASISTE/i.test(p.confirmacion || '')).length
-    const rsvpNo     = todos.filter(p => /NO ASISTE/i.test(p.confirmacion || '')).length
-    const rsvpSin    = total - rsvpAsiste - rsvpNo
+    const rsvpConfirmado = todos.filter(c => /CONFIRMAD/i.test(c.confirmacion || '')).length
+    const rsvpNo         = todos.filter(c => /NO ASIST/i.test(c.confirmacion || '')).length
+    const rsvpEnviado    = todos.filter(c => /ENVIAD/i.test(c.confirmacion || '')).length
+    const rsvpSin        = total - rsvpConfirmado - rsvpNo - rsvpEnviado
 
-    setStats({ total, totalPresentes, totalAusentes, acompanantes, soloAcompanante, presidentesEnPersona, porDia, porPartido, rsvpAsiste, rsvpNo, rsvpSin })
+    setStats({ total, totalPresentes, totalAusentes, porDistrito, porDistritoChart, rsvpConfirmado, rsvpEnviado, rsvpNo, rsvpSin })
     setLoading(false)
   }
 
-  // Reporte PDF: resumen + listas de presentes/ausentes por día.
+  // Reporte PDF: resumen + por distrito + listas de presentes/ausentes.
   async function exportPDF() {
     if (!stats) return
     setExporting('pdf')
@@ -147,108 +115,101 @@ export default function Estadisticas({ usuario }) {
       const pct = stats.total > 0 ? ((stats.totalPresentes / stats.total) * 100).toFixed(1) : '0.0'
 
       doc.setFontSize(18); doc.setTextColor(14, 50, 46)
-      doc.text('STSEGOB — Asistencia Presidentes Municipales', 14, 22)
+      doc.text('STSEGOB — Desayuno Consejeros MORENA', 14, 22)
       doc.setFontSize(10); doc.setTextColor(100)
       doc.text(`Generado: ${now}`, 14, 30)
       doc.setFontSize(13); doc.setTextColor(0)
       doc.text('Resumen General', 14, 44)
       autoTable(doc, {
         startY: 48,
-        head: [['Total', 'Presentes', 'Ausentes', 'Acompañantes', '% Asistencia']],
-        body: [[stats.total, stats.totalPresentes, stats.totalAusentes, stats.acompanantes, `${pct}%`]],
+        head: [['Total', 'Presentes', 'Ausentes', 'Confirmados (RSVP)', '% Asistencia']],
+        body: [[stats.total, stats.totalPresentes, stats.totalAusentes, stats.rsvpConfirmado, `${pct}%`]],
         headStyles: { fillColor: [14, 50, 46] },
       })
-      doc.text('Asistencia por Día', 14, doc.lastAutoTable.finalY + 14)
+      doc.text('Asistencia por Distrito', 14, doc.lastAutoTable.finalY + 14)
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 18,
-        head: [['Día', 'Presidentes', 'Presentes', 'Ausentes', '%']],
-        body: stats.porDia.map(d => [
-          d.key, d.Invitados, d.Presentes, d.Invitados - d.Presentes,
+        head: [['Distrito', 'Consejeros', 'Presentes', 'Ausentes', '%']],
+        body: stats.porDistrito.map(d => [
+          d.label, d.Invitados, d.Presentes, d.Invitados - d.Presentes,
           d.Invitados > 0 ? `${((d.Presentes / d.Invitados) * 100).toFixed(1)}%` : '0.0%',
         ]),
         headStyles: { fillColor: [14, 50, 46] },
       })
 
-      // Listas por día: presentes y ausentes
-      for (const { dia, label } of DIAS_REPORTE) {
-        const grupo = rows.filter(r => r.dia === dia).sort(porMunicipio)
-        if (!grupo.length) continue
-        const presentes = grupo.filter(r => r.asistio)
-        const ausentes  = grupo.filter(r => !r.asistio)
+      // Listas: presentes y ausentes (ordenadas por distrito y municipio)
+      const ordenar = (a, b) => ordenDistrito(a.distrito) - ordenDistrito(b.distrito) || porMunicipio(a, b)
+      const presentes = rows.filter(r => r.asistio).sort(ordenar)
+      const ausentes  = rows.filter(r => !r.asistio).sort(ordenar)
 
-        doc.addPage()
-        doc.setFontSize(14); doc.setTextColor(14, 50, 46)
-        doc.text(`${label}`, 14, 20)
-        doc.setFontSize(10); doc.setTextColor(100)
-        doc.text(`Presidentes: ${grupo.length}  ·  Presentes: ${presentes.length}  ·  Ausentes: ${ausentes.length}`, 14, 27)
+      doc.addPage()
+      doc.setFontSize(14); doc.setTextColor(21, 128, 61)
+      doc.text(`Asistieron (${presentes.length})`, 14, 20)
+      autoTable(doc, {
+        startY: 24,
+        head: [['#', 'Consejero(a)', 'Distrito', 'Municipio origen', 'Hora']],
+        body: presentes.map(r => [
+          r.numero, r.nombre, distritoInfo(r.distrito).label, r.municipio_origen || '', horaRegistro(r.fecha_asistencia),
+        ]),
+        styles: { fontSize: 8, cellPadding: 1.5 },
+        headStyles: { fillColor: [21, 128, 61], fontSize: 8 },
+      })
 
-        doc.setFontSize(12); doc.setTextColor(21, 128, 61)
-        doc.text(`Asistieron (${presentes.length})`, 14, 37)
-        autoTable(doc, {
-          startY: 40,
-          head: [['Municipio', 'Presidente', 'Partido', 'Hora', 'Representó', 'Acompañante']],
-          body: presentes.map(r => [
-            r.municipio, r.nombre, partidoInfo(r.partido).label,
-            horaRegistro(r.fecha_asistencia), quienRepresento(r), r.acompanante_nombre || '',
-          ]),
-          styles: { fontSize: 8, cellPadding: 1.5 },
-          headStyles: { fillColor: [21, 128, 61], fontSize: 8 },
-        })
+      doc.addPage()
+      doc.setFontSize(14); doc.setTextColor(185, 28, 28)
+      doc.text(`No asistieron (${ausentes.length})`, 14, 20)
+      autoTable(doc, {
+        startY: 24,
+        head: [['#', 'Consejero(a)', 'Distrito', 'Municipio origen', 'Teléfono', 'RSVP previo']],
+        body: ausentes.map(r => [
+          r.numero, r.nombre, distritoInfo(r.distrito).label, r.municipio_origen || '', r.telefono || '', r.confirmacion || '',
+        ]),
+        styles: { fontSize: 8, cellPadding: 1.5 },
+        headStyles: { fillColor: [185, 28, 28], fontSize: 8 },
+      })
 
-        doc.setFontSize(12); doc.setTextColor(185, 28, 28)
-        doc.text(`No asistieron (${ausentes.length})`, 14, doc.lastAutoTable.finalY + 10)
-        autoTable(doc, {
-          startY: doc.lastAutoTable.finalY + 13,
-          head: [['Municipio', 'Presidente', 'Partido', 'Teléfono', 'Responsable', 'RSVP previo']],
-          body: ausentes.map(r => [
-            r.municipio, r.nombre, partidoInfo(r.partido).label, r.telefono || '',
-            r.responsable || '', r.confirmacion || '',
-          ]),
-          styles: { fontSize: 8, cellPadding: 1.5 },
-          headStyles: { fillColor: [185, 28, 28], fontSize: 8 },
-        })
-      }
-
-      doc.save(`listas-presidentes-${now.replace(/[/:, ]/g, '-')}.pdf`)
+      doc.save(`consejeros-desayuno-${now.replace(/[/:, ]/g, '-')}.pdf`)
     } finally {
       setExporting(null)
     }
   }
 
-  // Reporte Excel: una pestaña por día con estado presente/ausente.
+  // Reporte Excel: una pestaña por distrito con estado presente/ausente.
   async function exportExcel() {
     setExporting('excel')
     try {
       const rows = await fetchDetalle()
       const wb = XLSX.utils.book_new()
-      for (const { dia, label } of DIAS_REPORTE) {
-        const grupo = rows.filter(r => r.dia === dia)
+
+      // Hoja general con todos
+      const todos = [...rows].sort((a, b) => ordenDistrito(a.distrito) - ordenDistrito(b.distrito) || porMunicipio(a, b))
+      const mapRow = r => ({
+        '#': r.numero,
+        Consejero: r.nombre,
+        Distrito: distritoInfo(r.distrito).label,
+        'Municipio origen': r.municipio_origen || '',
+        Teléfono: r.telefono || '',
+        Estado: r.asistio ? 'Presente' : 'Ausente',
+        'Hora registro': r.asistio ? horaRegistro(r.fecha_asistencia) : '',
+        'RSVP previo': r.confirmacion || '',
+        Observaciones: r.observaciones || '',
+      })
+      const cols = [{ wch: 6 }, { wch: 30 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 26 }]
+      const wsAll = XLSX.utils.json_to_sheet(todos.map(mapRow))
+      wsAll['!cols'] = cols
+      XLSX.utils.book_append_sheet(wb, wsAll, 'Todos')
+
+      for (const dk of DISTRITOS_ORDEN) {
+        const grupo = rows.filter(r => normDistrito(r.distrito) === normDistrito(dk))
         if (!grupo.length) continue
-        // Presentes primero, luego ausentes; dentro, por municipio
         grupo.sort((a, b) => (a.asistio === b.asistio ? porMunicipio(a, b) : a.asistio ? -1 : 1))
-        const data = grupo.map(r => ({
-          Municipio: r.municipio,
-          Presidente: r.nombre,
-          Partido: partidoInfo(r.partido).label,
-          Teléfono: r.telefono || '',
-          Responsable: r.responsable || '',
-          Estado: r.asistio ? 'Presente' : 'Ausente',
-          'Hora registro': r.asistio ? horaRegistro(r.fecha_asistencia) : '',
-          Representó: r.asistio ? quienRepresento(r) : '',
-          'Asistió presidente': r.asistio ? (r.presidente_asistio ? 'Sí' : 'No') : '',
-          'Asistió acompañante': r.asistio ? (r.acompanante_asistio ? 'Sí' : 'No') : '',
-          'Nombre acompañante': r.acompanante_asistio ? (r.acompanante_nombre || '') : '',
-          'RSVP previo': r.confirmacion || '',
-        }))
-        const ws = XLSX.utils.json_to_sheet(data)
-        ws['!cols'] = [
-          { wch: 24 }, { wch: 30 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 10 },
-          { wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 26 }, { wch: 12 },
-        ]
-        XLSX.utils.book_append_sheet(wb, ws, label.replace(/[[\]:*?/\\]/g, '').slice(0, 31))
+        const ws = XLSX.utils.json_to_sheet(grupo.map(mapRow))
+        ws['!cols'] = cols
+        XLSX.utils.book_append_sheet(wb, ws, distritoInfo(dk).label.replace(/[[\]:*?/\\]/g, '').slice(0, 31))
       }
+
       const now = new Date().toLocaleString('es-MX').replace(/[/:, ]/g, '-')
-      XLSX.writeFile(wb, `listas-presidentes-${now}.xlsx`)
+      XLSX.writeFile(wb, `consejeros-desayuno-${now}.xlsx`)
     } finally {
       setExporting(null)
     }
@@ -285,7 +246,7 @@ export default function Estadisticas({ usuario }) {
               </div>
             </div>
             <p className="text-sm text-gray-600 mb-5">
-              Se marcará a <strong>todos los presidentes como ausentes</strong> (incluye acompañantes y fechas de registro). ¿Continuar?
+              Se marcará a <strong>todos los consejeros como ausentes</strong> (solo este evento). ¿Continuar?
             </p>
             <div className="flex gap-2">
               <button onClick={() => setConfirm(false)} className="flex-1 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-xl text-sm transition-colors">Cancelar</button>
@@ -297,7 +258,7 @@ export default function Estadisticas({ usuario }) {
 
       {/* Header acciones */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-base font-bold text-gray-800">Estadísticas de la gira</h2>
+        <h2 className="text-base font-bold text-gray-800">Estadísticas del desayuno</h2>
         <div className="flex gap-2 flex-wrap">
           {isAdmin && (
             <button onClick={() => setConfirm(true)} disabled={resetting}
@@ -365,7 +326,7 @@ export default function Estadisticas({ usuario }) {
             <div>
               <div className="text-xs font-medium text-white/70 uppercase tracking-widest mb-1">Progreso general</div>
               <div className="text-5xl font-black">{pct}<span className="text-2xl font-bold text-white/60">%</span></div>
-              <div className="text-sm text-white/70 mt-1">{stats.totalPresentes.toLocaleString('es-MX')} de {stats.total.toLocaleString('es-MX')} presidentes</div>
+              <div className="text-sm text-white/70 mt-1">{stats.totalPresentes.toLocaleString('es-MX')} de {stats.total.toLocaleString('es-MX')} consejeros</div>
             </div>
             <div className="flex-shrink-0 w-16">
               <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
@@ -377,20 +338,20 @@ export default function Estadisticas({ usuario }) {
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <IconUserGroup className="w-5 h-5 text-emerald-600" />
+              <IconUsers className="w-5 h-5 text-emerald-600" />
             </div>
             <div className="min-w-0">
-              <div className="text-2xl font-black text-emerald-700">{stats.acompanantes.toLocaleString('es-MX')}</div>
-              <div className="text-xs text-gray-500 font-medium">Asistió acompañante</div>
-              <div className="text-[11px] text-gray-400 mt-0.5">
-                {stats.soloAcompanante.toLocaleString('es-MX')} en representación (sin presidente)
-              </div>
+              <div className="text-2xl font-black text-emerald-700">{stats.porDistrito.length}</div>
+              <div className="text-xs text-gray-500 font-medium">Distritos federales</div>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">RSVP previo</div>
             <div className="flex items-center justify-between text-sm mb-1">
-              <span className="text-green-600 font-medium">Asiste</span><span className="font-bold text-green-700">{stats.rsvpAsiste}</span>
+              <span className="text-green-600 font-medium">Confirmado</span><span className="font-bold text-green-700">{stats.rsvpConfirmado}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="text-amber-600 font-medium">Enviado (pend.)</span><span className="font-bold text-amber-700">{stats.rsvpEnviado}</span>
             </div>
             <div className="flex items-center justify-between text-sm mb-1">
               <span className="text-red-500 font-medium">No asiste</span><span className="font-bold text-red-600">{stats.rsvpNo}</span>
@@ -402,22 +363,22 @@ export default function Estadisticas({ usuario }) {
         </div>
       </div>
 
-      {/* Por día */}
+      {/* Por distrito */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-800">Asistencia por Día</h3>
+          <h3 className="text-sm font-bold text-gray-800">Asistencia por Distrito</h3>
         </div>
         <div className="p-4 sm:p-6 overflow-x-auto">
           <div style={{ minWidth: 280 }}>
-            <ResponsiveContainer width="100%" height={Math.max(200, stats.porDia.length * 52)}>
-              <BarChart data={stats.porDia} layout="vertical" margin={{ top: 0, right: 50, left: 20, bottom: 0 }} barCategoryGap="30%">
+            <ResponsiveContainer width="100%" height={Math.max(240, stats.porDistritoChart.length * 46)}>
+              <BarChart data={stats.porDistritoChart} layout="vertical" margin={{ top: 0, right: 50, left: 20, bottom: 0 }} barCategoryGap="30%">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="key" width={90} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="key" width={120} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: 'rgba(64,155,132,0.07)' }}
                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontSize: 12, padding: '10px 14px' }}
                   labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 6 }} />
-                <Bar dataKey="Invitados" name="Presidentes" fill="#409b8430" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="Invitados" name="Consejeros" fill="#409b8430" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="Presentes" name="Presentes" fill="#409b84" radius={[0, 4, 4, 0]}
                   label={{ position: 'right', fontSize: 11, fill: '#26645b', fontWeight: 700 }} />
               </BarChart>
@@ -426,17 +387,17 @@ export default function Estadisticas({ usuario }) {
         </div>
       </div>
 
-      {/* Por partido */}
+      {/* Detalle por distrito */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-gray-800">Asistencia por Partido</h3>
-          <span className="text-xs text-gray-400">{stats.porPartido.length} partidos</span>
+          <h3 className="text-sm font-bold text-gray-800">Detalle por Distrito</h3>
+          <span className="text-xs text-gray-400">{stats.porDistrito.length} distritos</span>
         </div>
         <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-          {stats.porPartido.map((d, i) => {
+          {stats.porDistrito.map((d, i) => {
             const p = d.Invitados > 0 ? (d.Presentes / d.Invitados) * 100 : 0
             return (
-              <div key={d.partido} className="px-6 py-3 hover:bg-slate-50 transition-colors">
+              <div key={d.distrito} className="px-6 py-3 hover:bg-slate-50 transition-colors">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="text-[11px] font-bold text-gray-400 w-5 text-right flex-shrink-0">{i + 1}</span>

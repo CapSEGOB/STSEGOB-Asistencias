@@ -1,37 +1,55 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { partidoInfo, partidoLogoSrc } from '../../lib/partidos'
-import { IconCheck, IconX, IconPin, IconPhone, IconCalendar, IconUserGroup } from '../Icons'
+import { IconCheck, IconX, IconPin, IconPhone, IconCalendar, IconUserGroup, IconUsers } from '../Icons'
 
 const DIAS = [1, 2, 3, 4]
 
 export default function RegistroPresidenteModal({ presidente, usuario, onClose, onActualizado }) {
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState(null)
-  const [acompanante, setAcompanante] = useState(!!presidente.acompanante)
-  const [dia, setDia]                 = useState(presidente.dia ?? '')
-  const [obs, setObs]                 = useState(presidente.observaciones || '')
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState(null)
 
-  const info    = partidoInfo(presidente.partido)
-  const logo    = partidoLogoSrc(presidente.partido)
-  const dirty   = acompanante !== !!presidente.acompanante
-                || String(dia) !== String(presidente.dia ?? '')
-                || obs !== (presidente.observaciones || '')
+  const [presAsistio, setPresAsistio]   = useState(!!presidente.presidente_asistio)
+  const [acompAsistio, setAcompAsistio] = useState(!!presidente.acompanante_asistio)
+  const [acompNombre, setAcompNombre]   = useState(presidente.acompanante_nombre || '')
+  const [dia, setDia]                   = useState(presidente.dia ?? '')
+  const [obs, setObs]                   = useState(presidente.observaciones || '')
 
-  async function guardar(marcarAsistencia) {
+  const info = partidoInfo(presidente.partido)
+  const logo = partidoLogoSrc(presidente.partido)
+
+  const nuevoAsistio = presAsistio || acompAsistio
+  const nombreLimpio = acompNombre.trim()
+
+  const dirty =
+       presAsistio !== !!presidente.presidente_asistio
+    || acompAsistio !== !!presidente.acompanante_asistio
+    || nombreLimpio !== (presidente.acompanante_nombre || '')
+    || String(dia) !== String(presidente.dia ?? '')
+    || obs !== (presidente.observaciones || '')
+
+  async function guardar() {
     setLoading(true)
     setError(null)
     const prevAsistio = presidente.asistio
 
     const update = {
-      acompanante,
-      dia: dia === '' ? null : Number(dia),
-      observaciones: obs || null,
+      presidente_asistio:  presAsistio,
+      acompanante_asistio: acompAsistio,
+      acompanante_nombre:  acompAsistio ? (nombreLimpio || null) : null,
+      acompanante:         acompAsistio, // se conserva la columna legacy en sincronía
+      asistio:             nuevoAsistio,
+      dia:                 dia === '' ? null : Number(dia),
+      observaciones:       obs || null,
     }
-    if (marcarAsistencia) {
-      update.asistio = true
+
+    // Sello de registro: se pone al pasar a presente, se limpia al dejar de estarlo.
+    if (nuevoAsistio && !prevAsistio) {
       update.fecha_asistencia = new Date().toISOString()
-      update.registrado_por = usuario.id
+      update.registrado_por   = usuario.id
+    } else if (!nuevoAsistio) {
+      update.fecha_asistencia = null
+      update.registrado_por   = null
     }
 
     const { data, error } = await supabase
@@ -83,7 +101,9 @@ export default function RegistroPresidenteModal({ presidente, usuario, onClose, 
               <IconCheck className="w-3 h-3 text-white" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-green-700">Asistencia confirmada</p>
+              <p className="text-xs font-semibold text-green-700">
+                Asistencia registrada{estadoTexto(presidente) ? ` — ${estadoTexto(presidente)}` : ''}
+              </p>
               {presidente.fecha_asistencia && (
                 <p className="text-xs text-green-600">
                   {new Date(presidente.fecha_asistencia).toLocaleString('es-MX', {
@@ -141,24 +161,70 @@ export default function RegistroPresidenteModal({ presidente, usuario, onClose, 
             </select>
           </label>
 
-          {/* Acompañante */}
-          <button
-            type="button"
-            onClick={() => setAcompanante(v => !v)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
-              acompanante ? 'bg-[#409b84]/10 border-[#409b84]' : 'border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 ${
-              acompanante ? 'bg-[#26645b] border-[#26645b]' : 'border-gray-300 bg-white'
-            }`}>
-              {acompanante && <IconCheck className="w-3 h-3 text-white" />}
-            </span>
-            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-              <IconUserGroup className="w-4 h-4 text-gray-400" />
-              ¿Llegó con acompañante?
-            </span>
-          </button>
+          {/* Asistencia: presidente y acompañante, independientes */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-500 block">¿Quién asistió?</span>
+
+            {/* Presidente en persona */}
+            <button
+              type="button"
+              onClick={() => setPresAsistio(v => !v)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                presAsistio ? 'bg-[#409b84]/10 border-[#409b84]' : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 ${
+                presAsistio ? 'bg-[#26645b] border-[#26645b]' : 'border-gray-300 bg-white'
+              }`}>
+                {presAsistio && <IconCheck className="w-3 h-3 text-white" />}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                <IconUsers className="w-4 h-4 text-gray-400" />
+                Asistió el presidente (en persona)
+              </span>
+            </button>
+
+            {/* Acompañante en representación */}
+            <button
+              type="button"
+              onClick={() => setAcompAsistio(v => !v)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                acompAsistio ? 'bg-[#409b84]/10 border-[#409b84]' : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 ${
+                acompAsistio ? 'bg-[#26645b] border-[#26645b]' : 'border-gray-300 bg-white'
+              }`}>
+                {acompAsistio && <IconCheck className="w-3 h-3 text-white" />}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                <IconUserGroup className="w-4 h-4 text-gray-400" />
+                Asistió acompañante {presAsistio ? '' : '(en representación)'}
+              </span>
+            </button>
+
+            {/* Nombre del acompañante */}
+            {acompAsistio && (
+              <label className="block pl-1">
+                <span className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                  Nombre del acompañante <span className="font-normal text-gray-400">(opcional)</span>
+                </span>
+                <input
+                  type="text"
+                  value={acompNombre}
+                  onChange={e => setAcompNombre(e.target.value)}
+                  placeholder="¿Quién asiste en representación?"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#409b84] transition"
+                />
+              </label>
+            )}
+
+            {!nuevoAsistio && (
+              <p className="text-[11px] text-gray-400 pl-1">
+                Sin marcar: el municipio queda como <span className="font-semibold">ausente</span>.
+              </p>
+            )}
+          </div>
 
           {/* Observaciones */}
           <label className="block">
@@ -178,36 +244,30 @@ export default function RegistroPresidenteModal({ presidente, usuario, onClose, 
         )}
 
         {/* Acciones */}
-        <div className="px-5 pb-5 space-y-2">
-          {!presidente.asistio ? (
-            <button
-              onClick={() => guardar(true)}
-              disabled={loading}
-              className="w-full py-4 rounded-xl text-white text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
-              style={{ backgroundColor: '#26645b' }}
-            >
-              {loading ? <Spinner /> : <><IconPin className="w-4 h-4" /> Confirmar asistencia</>}
-            </button>
-          ) : (
-            <div className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold text-center flex items-center justify-center gap-2">
-              <IconCheck className="w-4 h-4" /> Ya registrado
-            </div>
-          )}
-
-          {/* Guardar cambios (día / acompañante / observaciones) sin re-marcar */}
-          {dirty && (
-            <button
-              onClick={() => guardar(false)}
-              disabled={loading}
-              className="w-full py-3 rounded-xl border border-[#26645b] text-[#26645b] text-sm font-bold transition-all hover:bg-[#26645b]/5 flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {loading ? <Spinner dark /> : 'Guardar cambios'}
-            </button>
+        <div className="px-5 pb-5">
+          <button
+            onClick={guardar}
+            disabled={loading || !dirty}
+            className="w-full py-4 rounded-xl text-white text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#26645b' }}
+          >
+            {loading ? <Spinner /> : <><IconPin className="w-4 h-4" /> {presidente.asistio ? 'Guardar cambios' : 'Registrar asistencia'}</>}
+          </button>
+          {!dirty && presidente.asistio && (
+            <p className="text-center text-xs text-gray-400 mt-2">Ya registrado. Modifica algún dato para guardar.</p>
           )}
         </div>
       </div>
     </div>
   )
+}
+
+// Texto corto de quién representó al municipio (para encabezados/estado).
+export function estadoTexto(p) {
+  if (p.presidente_asistio && p.acompanante_asistio) return 'Presidente + acompañante'
+  if (p.presidente_asistio) return 'Presidente'
+  if (p.acompanante_asistio) return 'Acompañante (en representación)'
+  return ''
 }
 
 function Spinner({ dark }) {

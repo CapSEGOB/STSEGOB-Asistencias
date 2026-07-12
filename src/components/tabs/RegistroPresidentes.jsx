@@ -292,9 +292,15 @@ export default function RegistroPresidentes({ usuario }) {
                               <IconX className="w-3 h-3" /> Ausente
                             </span>
                           )}
-                          {p.asistio && p.acompanante && (
+                          {p.asistio && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#26645b]">
-                              <IconUserGroup className="w-3 h-3" /> +1 acompañante
+                              {p.acompanante_asistio && !p.presidente_asistio ? (
+                                <><IconUserGroup className="w-3 h-3" /> Acompañante (rep.)</>
+                              ) : p.presidente_asistio && p.acompanante_asistio ? (
+                                <><IconUserGroup className="w-3 h-3" /> Presidente + acompañante</>
+                              ) : (
+                                <>Presidente</>
+                              )}
                             </span>
                           )}
                           {!p.asistio && p.confirmacion && /NO/i.test(p.confirmacion) && (
