@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './components/Login'
 import Layout from './components/Layout'
+import ZoomRegistro from './components/ZoomRegistro'
 
 function Spinner() {
   return (
@@ -12,6 +13,14 @@ function Spinner() {
 }
 
 export default function App() {
+  // Ruta PÚBLICA de auto-registro Zoom (sin login): #/zoom
+  const [esZoom, setEsZoom] = useState(window.location.hash.startsWith('#/zoom'))
+  useEffect(() => {
+    const onHash = () => setEsZoom(window.location.hash.startsWith('#/zoom'))
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
   // undefined = cargando, null = sin sesión, objeto = sesión activa
   const [session, setSession] = useState(undefined)
   const [usuario, setUsuario] = useState(null)
@@ -42,6 +51,8 @@ export default function App() {
       setUsuario(null)
     }
   }, [session])
+
+  if (esZoom) return <ZoomRegistro />
 
   if (session === undefined || (session && !usuario)) return <Spinner />
   if (!session) return <Login />

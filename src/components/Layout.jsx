@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import RegistroPresidentes from './tabs/RegistroPresidentes'
 import RegistroConsejeros from './tabs/RegistroConsejeros'
+import RegistroPC from './tabs/RegistroPC'
+import EstadisticasPC from './tabs/EstadisticasPC'
 import RegistroUsuarios from './tabs/RegistroUsuarios'
 import Estadisticas from './tabs/Estadisticas'
 import EstadisticasConsejeros from './tabs/EstadisticasConsejeros'
-import { IconChart, IconLogout, IconUserPlus, IconPin } from './Icons'
+import { IconChart, IconLogout, IconUserPlus, IconPin, IconUsers } from './Icons'
 
 // Cada evento es independiente: su propia lista y sus propias estadísticas.
 const EVENTOS = [
@@ -25,6 +27,16 @@ const EVENTOS = [
     tabs: [
       { id: 'cd-registro', label: 'Registro',     icon: IconPin,   render: u => <RegistroConsejeros usuario={u} /> },
       { id: 'cd-stats',    label: 'Estadísticas',  icon: IconChart, render: u => <EstadisticasConsejeros usuario={u} /> },
+    ],
+  },
+  {
+    id: 'proteccion-civil',
+    label: 'Consejo Protección Civil',
+    short: 'Prot. Civil',
+    tabs: [
+      { id: 'pc-presencial', label: 'Presencial',   icon: IconPin,   render: u => <RegistroPC usuario={u} modalidad="presencial" /> },
+      { id: 'pc-zoom',       label: 'Vía Zoom',     icon: IconUsers, render: u => <RegistroPC usuario={u} modalidad="zoom" /> },
+      { id: 'pc-stats',      label: 'Estadísticas',  icon: IconChart, render: u => <EstadisticasPC usuario={u} /> },
     ],
   },
 ]
